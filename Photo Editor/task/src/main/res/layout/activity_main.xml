@@ -27,5 +27,19 @@
         app:layout_constraintTop_toBottomOf="@+id/ivPhoto"
         app:layout_constraintVertical_bias="0.2" />
 
+    <com.google.android.material.slider.Slider
+        android:id="@+id/slBrightness"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:stepSize="10.0"
+        android:value="0.0"
+        android:valueFrom="-250.0"
+        android:valueTo="250.0"
+        app:layout_constraintTop_toBottomOf="@+id/btnGallery"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_bias="0.2" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
