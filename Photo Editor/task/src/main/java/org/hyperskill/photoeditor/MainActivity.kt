@@ -1,7 +1,10 @@
 package org.hyperskill.photoeditor
 
+import android.Manifest
 import android.app.Activity
+import android.content.ContentValues
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -11,21 +14,23 @@ import android.widget.Button
 import android.widget.ImageView
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.slider.Slider
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.withContext
 
+private const val PERMISSION_REQUEST_CODE = 0
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var currentImage: ImageView
     private lateinit var galleryBtn: Button
+    private lateinit var saveBtn: Button
     private lateinit var brightnessSlider: Slider
     private lateinit var originalBitmap: Bitmap
     private var filterJob: Job? = null
@@ -45,6 +50,7 @@ class MainActivity : AppCompatActivity() {
         currentImage = findViewById(R.id.ivPhoto)
         galleryBtn = findViewById(R.id.btnGallery)
         brightnessSlider = findViewById(R.id.slBrightness)
+        saveBtn = findViewById(R.id.btnSave)
     }
 
     private fun setListeners() {
@@ -62,11 +68,62 @@ class MainActivity : AppCompatActivity() {
             // cancel previous job to reduce lag
             println("onChange: $value")
             filterJob?.cancel()
-            if (fromUser){
-                lifecycleScope.launch (Dispatchers.Default) {
-                    filterJob = applyBrightness(originalBitmap, value)
+            filterJob = applyBrightness(originalBitmap, value)
+        }
+        saveBtn.setOnClickListener {
+            checkPermission()
+        }
+    }
+
+    private fun checkPermission() {
+        when {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+                    PackageManager.PERMISSION_GRANTED -> savePicture()
+            ActivityCompat.shouldShowRequestPermissionRationale(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE) -> requestPermission()
+            else -> requestPermission()
+        }
+    }
+
+    private fun requestPermission() {
+        ActivityCompat.requestPermissions(
+            this as Activity,
+            arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+            PERMISSION_REQUEST_CODE
+        )
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    saveBtn.callOnClick()
                 }
             }
+        }
+    }
+
+    private fun savePicture() {
+        val currentBitmap = currentImage.drawable.toBitmap()
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis())
+            put(MediaStore.Images.Media.MIME_TYPE, "images/jpeg")
+            put(MediaStore.Images.ImageColumns.WIDTH, currentBitmap.width)
+            put(MediaStore.Images.ImageColumns.HEIGHT, currentBitmap.height)
+        }
+        val uri = contentResolver.insert(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            contentValues) ?: return
+        println("output uri: $uri")
+        contentResolver.openOutputStream(uri).use {
+            println("Saving picture")
+            currentBitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
         }
     }
 
