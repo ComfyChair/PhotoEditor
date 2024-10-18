@@ -10,36 +10,53 @@
         android:id="@+id/ivPhoto"
         android:layout_width="300dp"
         android:layout_height="300dp"
+        android:contentDescription="@string/current_image_cont_descr"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.2"/>
 
-    <Button
-        android:id="@+id/btnGallery"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/buttonBar"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/gallery"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ivPhoto"
-        app:layout_constraintVertical_bias="0.2" />
+        android:gravity="center_horizontal"
+        android:orientation="horizontal"
+        app:layout_constraintStart_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/ivPhoto" >
+
+        <Button
+            android:id="@+id/btnGallery"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/gallery"
+            android:layout_marginEnd="16dp"/>
+
+        <Button
+            android:id="@+id/btnSave"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="@string/save" />
+    </LinearLayout>
+
 
     <com.google.android.material.slider.Slider
         android:id="@+id/slBrightness"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:contentDescription="@string/brightness_slider_cont_descr"
         android:stepSize="10.0"
         android:value="0.0"
         android:valueFrom="-250.0"
         android:valueTo="250.0"
-        app:layout_constraintTop_toBottomOf="@+id/btnGallery"
+        app:layout_constraintTop_toBottomOf="@+id/buttonBar"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintVertical_bias="0.2" />
+        app:layout_constraintVertical_bias="0.1" />
+
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

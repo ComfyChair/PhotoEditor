@@ -2,4 +2,7 @@
     <string name="app_name">Photo Editor</string>
     <string name="gallery">Gallery</string>
     <string name="brightness">brightness</string>
+    <string name="save">save</string>
+    <string name="brightness_slider_cont_descr">brightness slider</string>
+    <string name="current_image_cont_descr">current image</string>
 </resources>

@@ -11,8 +11,15 @@ import android.widget.Button
 import android.widget.ImageView
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.slider.Slider
-import java.io.InputStream
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 
 
 class MainActivity : AppCompatActivity() {
@@ -21,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var galleryBtn: Button
     private lateinit var brightnessSlider: Slider
     private lateinit var originalBitmap: Bitmap
+    private var filterJob: Job? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -41,6 +49,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun setListeners() {
         galleryBtn.setOnClickListener {
+            //cancel old jobs
+            filterJob?.cancel()
             activityResultLauncher.launch(
                 Intent(
                     Intent.ACTION_PICK,
@@ -48,8 +58,15 @@ class MainActivity : AppCompatActivity() {
                 )
             )
         }
-        brightnessSlider.addOnChangeListener { slider, value, fromUser ->
-            currentImage.setImageBitmap(applyBrightness(originalBitmap, value))
+        brightnessSlider.addOnChangeListener { _, value, fromUser ->
+            // cancel previous job to reduce lag
+            println("onChange: $value")
+            filterJob?.cancel()
+            if (fromUser){
+                lifecycleScope.launch (Dispatchers.Default) {
+                    filterJob = applyBrightness(originalBitmap, value)
+                }
+            }
         }
     }
 
@@ -63,31 +80,41 @@ class MainActivity : AppCompatActivity() {
                 contentResolver.openInputStream(photoUri).use {
                     originalBitmap = BitmapFactory.decodeStream(it)
                 }
+                println("Loading new picture, dims: ${originalBitmap.height}x${originalBitmap.width}")
                 currentImage.setImageBitmap(originalBitmap)
-
             }
         }
 
-    private fun applyBrightness(inBitmap: Bitmap, offset: Float): Bitmap {
-        val outBitmap = inBitmap.copy(Bitmap.Config.RGB_565, true)
-        val height = outBitmap.height
-        val width = outBitmap.width
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                val R = (Color.red(inBitmap.getPixel(x, y))
-                        + offset.toInt())
-                    .coerceIn(0, 255)
-                val G = (Color.green(inBitmap.getPixel(x, y))
-                        + offset.toInt())
-                    .coerceIn(0, 255)
-                val B = (Color.blue(inBitmap.getPixel(x, y))
-                        + offset.toInt())
-                    .coerceIn(0, 255)
-                outBitmap.setPixel(x, y, Color.rgb(R, G, B))
+    private fun applyBrightness(inBitmap: Bitmap, offset: Float) : Job =
+        lifecycleScope.launch(Dispatchers.Default) {
+            //TODO: restrict size, improve cancellation and / or use streams to increase computation speed
+            // large pics still lag
+            val outBitmap = inBitmap.copy(Bitmap.Config.RGB_565, true)
+            val height = outBitmap.height
+            val width = outBitmap.width
+            for (y in 0 until height) {
+                if (isActive) {
+                    for (x in 0 until width) {
+                        if (isActive) {
+                            val R = (Color.red(inBitmap.getPixel(x, y))
+                                    + offset.toInt())
+                                .coerceIn(0, 255)
+                            val G = (Color.green(inBitmap.getPixel(x, y))
+                                    + offset.toInt())
+                                .coerceIn(0, 255)
+                            val B = (Color.blue(inBitmap.getPixel(x, y))
+                                    + offset.toInt())
+                                .coerceIn(0, 255)
+                            outBitmap.setPixel(x, y, Color.rgb(R, G, B))
+                        }
+                    }
+                }
+            }
+            if (isActive) {
+                println("Updating picture with brightness $offset")
+                currentImage.setImageBitmap(outBitmap)
             }
         }
-        return outBitmap
-    }
 
     // do not change this function
     fun createBitmap(): Bitmap {
@@ -118,5 +145,11 @@ class MainActivity : AppCompatActivity() {
         val bitmapOut = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
         bitmapOut.setPixels(pixels, 0, width, 0, 0, width, height)
         return bitmapOut
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        filterJob?.cancel()
+        filterJob = null
     }
 }
