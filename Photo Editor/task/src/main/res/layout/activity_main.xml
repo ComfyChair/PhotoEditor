@@ -28,6 +28,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
+        android:layout_marginBottom="16dp"
         android:gravity="center_horizontal"
         android:orientation="horizontal"
         app:layout_constraintStart_toStartOf="parent"
@@ -54,6 +55,7 @@
         android:id="@+id/brightnessText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
         android:layout_marginStart="16dp"
         android:text="@string/brightness"
         app:layout_constraintStart_toStartOf="parent"
@@ -95,5 +97,50 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
 
+    <TextView
+        android:id="@+id/saturationText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/saturation"
+        app:layout_constraintTop_toBottomOf="@+id/slContrast"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginStart="16dp"
+        />
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/slSaturation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/saturation_slider_cont_descr"
+        android:stepSize="10.0"
+        android:value="0.0"
+        android:valueFrom="-250.0"
+        android:valueTo="250.0"
+        app:layout_constraintTop_toBottomOf="@+id/saturationText"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
+
+    <TextView
+        android:id="@+id/gammaText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/gamma"
+        app:layout_constraintTop_toBottomOf="@+id/slSaturation"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginStart="16dp"
+        />
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/slGamma"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/gamma_slider_cont_descr"
+        android:stepSize="0.2"
+        android:value="1.0"
+        android:valueFrom="0.2"
+        android:valueTo="4.0"
+        app:layout_constraintTop_toBottomOf="@+id/gammaText"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

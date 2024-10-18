@@ -7,4 +7,8 @@
     <string name="current_image_cont_descr">current image</string>
     <string name="contrast_slider_cont_descr">contrast slider</string>
     <string name="contrast">contrast</string>
+    <string name="saturation">saturation</string>
+    <string name="gamma">gamma</string>
+    <string name="saturation_slider_cont_descr">saturation slider</string>
+    <string name="gamma_slider_cont_descr">gamma slider</string>
 </resources>

@@ -22,14 +22,19 @@ import com.google.android.material.slider.Slider
 private const val PERMISSION_REQUEST_CODE = 0
 
 class MainActivity : AppCompatActivity() {
-
+    // current ImageView and backing Bitmap
     private lateinit var currentImage: ImageView
+    private lateinit var originalBitmap: Bitmap
+    // button bar buttons
     private lateinit var galleryBtn: Button
     private lateinit var saveBtn: Button
+    // filter values and filter sliders
+    private var filters = FilterSet.Default
     private lateinit var brightnessSlider: Slider
     private lateinit var contrastSlider: Slider
-    private lateinit var originalBitmap: Bitmap
-    private var filters : FilterSet = FilterSet(0,0)
+    private lateinit var saturationSlider: Slider
+    private lateinit var gammaSlider: Slider
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -41,14 +46,14 @@ class MainActivity : AppCompatActivity() {
         originalBitmap = createBitmap()
     }
 
-
-
     private fun bindViews() {
         currentImage = findViewById(R.id.ivPhoto)
         galleryBtn = findViewById(R.id.btnGallery)
         saveBtn = findViewById(R.id.btnSave)
         brightnessSlider = findViewById(R.id.slBrightness)
         contrastSlider = findViewById(R.id.slContrast)
+        saturationSlider = findViewById(R.id.slSaturation)
+        gammaSlider = findViewById(R.id.slGamma)
     }
 
     private fun setListeners() {
@@ -64,15 +69,25 @@ class MainActivity : AppCompatActivity() {
             checkPermission()
         }
         brightnessSlider.addOnChangeListener { _, value, fromUser ->
-            filters = FilterSet(value.toInt(), filters.contrastOffset)
-            println("Filters: $filters")
-            currentImage.setImageBitmap(filters.applyTo(originalBitmap))
+            filters.contrastOffset = value.toInt()
+            filterCurrentImage()
         }
         contrastSlider.addOnChangeListener { _, value, fromUser ->
-            filters = FilterSet(filters.brightnessOffset, value.toInt())
-            println("Filters: $filters")
-            currentImage.setImageBitmap(filters.applyTo(originalBitmap))
+            filters.brightnessOffset = value.toInt()
+            filterCurrentImage()
         }
+        saturationSlider.addOnChangeListener{ _, value, fromUser ->
+            filters.saturationOffset = value.toInt()
+            filterCurrentImage()
+        }
+        gammaSlider.addOnChangeListener { _, value, fromUser ->
+            filters.gammaValue = value.toDouble()
+            filterCurrentImage()
+        }
+    }
+
+    private fun filterCurrentImage() {
+        currentImage.setImageBitmap(filters.applyTo(originalBitmap))
     }
 
     private val activityResultLauncher =
@@ -86,9 +101,11 @@ class MainActivity : AppCompatActivity() {
                 }
                 currentImage.setImageBitmap(originalBitmap)
                 // reset slider positions and filter
-                filters = FilterSet(0,0)
-                brightnessSlider.value = 0.0f
-                contrastSlider.value = 0.0f
+                filters = FilterSet.Default
+                brightnessSlider.value = filters.brightnessOffset.toFloat()
+                contrastSlider.value = filters.contrastOffset.toFloat()
+                saturationSlider.value = filters.saturationOffset.toFloat()
+                gammaSlider.value = filters.gammaValue.toFloat()
             }
         }
 
@@ -174,6 +191,5 @@ class MainActivity : AppCompatActivity() {
         bitmapOut.setPixels(pixels, 0, width, 0, 0, width, height)
         return bitmapOut
     }
-
 
 }

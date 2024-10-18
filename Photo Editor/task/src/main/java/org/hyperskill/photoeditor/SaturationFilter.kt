@@ -2,10 +2,10 @@ package org.hyperskill.photoeditor
 
 import android.graphics.Bitmap
 import android.graphics.Color
+import org.hyperskill.photoeditor.ContrastFilter.applyContrast
 
-object ContrastFilter {
-    internal fun Bitmap.applyContrast(offset: Int) : Bitmap {
-        val avgBright = getAvgBrightness(this)
+object SaturationFilter {
+    internal fun Bitmap.applySaturation(offset: Int) : Bitmap {
         val alpha : Double = (255.0 + offset) / (255.0 - offset)
         val pixels = IntArray(width * height)
         var index: Int
@@ -14,11 +14,12 @@ object ContrastFilter {
                 // get current index in 2D-matrix
                 index = y * width + x
                 val thisPixel = this.getPixel(x, y)
-                val r = (alpha * (Color.red(thisPixel) - avgBright) + avgBright)
+                val rgbAvg = getRgbAvg(thisPixel)
+                val r = (alpha * (Color.red(thisPixel) - rgbAvg) + rgbAvg)
                     .toInt().coerceIn(0, 255)
-                val g = (alpha * (Color.green(thisPixel) - avgBright) + avgBright)
+                val g = (alpha * (Color.green(thisPixel) - rgbAvg) + rgbAvg)
                     .toInt().coerceIn(0, 255)
-                val b = (alpha * (Color.blue(thisPixel) - avgBright) + avgBright)
+                val b = (alpha * (Color.blue(thisPixel) - rgbAvg) + rgbAvg)
                     .toInt().coerceIn(0, 255)
                 pixels[index] = Color.rgb(r, g, b)
             }
@@ -28,14 +29,7 @@ object ContrastFilter {
         return outBitmap
     }
 
-    private fun getAvgBrightness(bitmap: Bitmap): Int {
-        val width = bitmap.width
-        val height = bitmap.height
-        val pixels = IntArray(bitmap.width * bitmap.height)
-        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
-        val avgBright = pixels
-            .map {(Color.red(it) + Color.green(it) + Color.blue(it)) / 3 }
-            .reduce {acc, i -> acc + i } / pixels.size
-        return avgBright
+    private fun getRgbAvg(pixel: Int): Int {
+        return (Color.red(pixel) + Color.green(pixel) + Color.blue(pixel)) / 3
     }
 }
