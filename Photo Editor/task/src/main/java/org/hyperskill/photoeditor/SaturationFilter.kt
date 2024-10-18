@@ -2,7 +2,6 @@ package org.hyperskill.photoeditor
 
 import android.graphics.Bitmap
 import android.graphics.Color
-import org.hyperskill.photoeditor.ContrastFilter.applyContrast
 
 object SaturationFilter {
     internal fun Bitmap.applySaturation(offset: Int) : Bitmap {
@@ -24,7 +23,7 @@ object SaturationFilter {
                 pixels[index] = Color.rgb(r, g, b)
             }
         }
-        val outBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+        val outBitmap = Bitmap.createBitmap(width, height, this.config)
         outBitmap.setPixels(pixels, 0, width, 0, 0, width, height )
         return outBitmap
     }

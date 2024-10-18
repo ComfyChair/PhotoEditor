@@ -11,19 +11,19 @@ object BrightnessFilter {
             for (x in 0 until width) {
                 // get current index in 2D-matrix
                 index = y * width + x
-                val r = (Color.red(this.getPixel(x, y))
+                val thisPixel = this.getPixel(x, y)
+                val r = (Color.red(thisPixel) + offset)
+                    .coerceIn(0, 255)
+                val g = (Color.green(thisPixel)
                         + offset)
                     .coerceIn(0, 255)
-                val g = (Color.green(this.getPixel(x, y))
-                        + offset)
-                    .coerceIn(0, 255)
-                val b = (Color.blue(this.getPixel(x, y))
+                val b = (Color.blue(thisPixel)
                         + offset)
                     .coerceIn(0, 255)
                 pixels[index] = Color.rgb(r, g, b)
             }
         }
-        val outBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+        val outBitmap = Bitmap.createBitmap(width, height, config)
         outBitmap.setPixels(pixels, 0, width, 0, 0, width, height )
         return outBitmap
     }

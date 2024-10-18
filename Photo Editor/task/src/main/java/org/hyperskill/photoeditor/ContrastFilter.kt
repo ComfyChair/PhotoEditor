@@ -23,7 +23,7 @@ object ContrastFilter {
                 pixels[index] = Color.rgb(r, g, b)
             }
         }
-        val outBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+        val outBitmap = Bitmap.createBitmap(width, height, config)
         outBitmap.setPixels(pixels, 0, width, 0, 0, width, height )
         return outBitmap
     }

@@ -41,9 +41,9 @@ class MainActivity : AppCompatActivity() {
         bindViews()
         setListeners()
 
+        originalBitmap = createBitmap()
         //do not change this line
         currentImage.setImageBitmap(createBitmap())
-        originalBitmap = createBitmap()
     }
 
     private fun bindViews() {
@@ -69,25 +69,27 @@ class MainActivity : AppCompatActivity() {
             checkPermission()
         }
         brightnessSlider.addOnChangeListener { _, value, fromUser ->
-            filters.contrastOffset = value.toInt()
+            filters = filters.copy(brightnessOffset = value.toInt())
             filterCurrentImage()
         }
         contrastSlider.addOnChangeListener { _, value, fromUser ->
-            filters.brightnessOffset = value.toInt()
+            filters = filters.copy(contrastOffset = value.toInt())
             filterCurrentImage()
         }
         saturationSlider.addOnChangeListener{ _, value, fromUser ->
-            filters.saturationOffset = value.toInt()
+            filters = filters.copy(saturationOffset = value.toInt())
             filterCurrentImage()
         }
         gammaSlider.addOnChangeListener { _, value, fromUser ->
-            filters.gammaValue = value.toDouble()
+            filters = filters.copy(gammaValue = value.toDouble())
             filterCurrentImage()
         }
     }
 
     private fun filterCurrentImage() {
-        currentImage.setImageBitmap(filters.applyTo(originalBitmap))
+        println("Filtering with $filters")
+        val filtered = filters.applyTo(originalBitmap)
+        currentImage.setImageBitmap(filtered)
     }
 
     private val activityResultLauncher =
