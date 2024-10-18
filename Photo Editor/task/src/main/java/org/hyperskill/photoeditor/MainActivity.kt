@@ -17,12 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
-import androidx.lifecycle.lifecycleScope
 import com.google.android.material.slider.Slider
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.isActive
 
 private const val PERMISSION_REQUEST_CODE = 0
 
@@ -32,8 +27,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var galleryBtn: Button
     private lateinit var saveBtn: Button
     private lateinit var brightnessSlider: Slider
+    private lateinit var contrastSlider: Slider
     private lateinit var originalBitmap: Bitmap
-    private var filterJob: Job? = null
+    private var filters : FilterSet = FilterSet(0,0)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -46,18 +42,17 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+
     private fun bindViews() {
         currentImage = findViewById(R.id.ivPhoto)
         galleryBtn = findViewById(R.id.btnGallery)
         saveBtn = findViewById(R.id.btnSave)
         brightnessSlider = findViewById(R.id.slBrightness)
-
+        contrastSlider = findViewById(R.id.slContrast)
     }
 
     private fun setListeners() {
         galleryBtn.setOnClickListener {
-            //cancel old jobs
-            filterJob?.cancel()
             activityResultLauncher.launch(
                 Intent(
                     Intent.ACTION_PICK,
@@ -65,16 +60,37 @@ class MainActivity : AppCompatActivity() {
                 )
             )
         }
-        brightnessSlider.addOnChangeListener { _, value, fromUser ->
-            // cancel previous job to reduce lag
-            println("onChange: $value")
-            filterJob?.cancel()
-            filterJob = applyBrightness(originalBitmap, value)
-        }
         saveBtn.setOnClickListener {
             checkPermission()
         }
+        brightnessSlider.addOnChangeListener { _, value, fromUser ->
+            filters = FilterSet(value.toInt(), filters.contrastOffset)
+            println("Filters: $filters")
+            currentImage.setImageBitmap(filters.applyTo(originalBitmap))
+        }
+        contrastSlider.addOnChangeListener { _, value, fromUser ->
+            filters = FilterSet(filters.brightnessOffset, value.toInt())
+            println("Filters: $filters")
+            currentImage.setImageBitmap(filters.applyTo(originalBitmap))
+        }
     }
+
+    private val activityResultLauncher =
+        registerForActivityResult(StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val photoUri = result.data?.data ?: return@registerForActivityResult
+                // update ivPhoto with loaded image and get Bitmap to apply filters
+                //currentImage.setImageURI(photoUri) // this would only display the image
+                contentResolver.openInputStream(photoUri).use {
+                    originalBitmap = BitmapFactory.decodeStream(it)
+                }
+                currentImage.setImageBitmap(originalBitmap)
+                // reset slider positions and filter
+                filters = FilterSet(0,0)
+                brightnessSlider.value = 0.0f
+                contrastSlider.value = 0.0f
+            }
+        }
 
     private fun checkPermission() {
         when {
@@ -128,52 +144,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val activityResultLauncher =
-        registerForActivityResult(StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                val photoUri = result.data?.data ?: return@registerForActivityResult
-                // update ivPhoto with loaded image and get Bitmap to apply filters
-                //currentImage.setImageURI(photoUri) // this would only display the image
-                brightnessSlider.value = 0.0f // reset slider position
-                contentResolver.openInputStream(photoUri).use {
-                    originalBitmap = BitmapFactory.decodeStream(it)
-                }
-                println("Loading new picture, dims: ${originalBitmap.height}x${originalBitmap.width}")
-                currentImage.setImageBitmap(originalBitmap)
-            }
-        }
-
-    private fun applyBrightness(inBitmap: Bitmap, offset: Float) : Job =
-        lifecycleScope.launch(Dispatchers.Default) {
-            //TODO: restrict size, improve cancellation and / or use streams to increase computation speed
-            // large pics still lag
-            val outBitmap = inBitmap.copy(Bitmap.Config.RGB_565, true)
-            val height = outBitmap.height
-            val width = outBitmap.width
-            for (y in 0 until height) {
-                if (isActive) {
-                    for (x in 0 until width) {
-                        if (isActive) {
-                            val R = (Color.red(inBitmap.getPixel(x, y))
-                                    + offset.toInt())
-                                .coerceIn(0, 255)
-                            val G = (Color.green(inBitmap.getPixel(x, y))
-                                    + offset.toInt())
-                                .coerceIn(0, 255)
-                            val B = (Color.blue(inBitmap.getPixel(x, y))
-                                    + offset.toInt())
-                                .coerceIn(0, 255)
-                            outBitmap.setPixel(x, y, Color.rgb(R, G, B))
-                        }
-                    }
-                }
-            }
-            if (isActive) {
-                println("Updating picture with brightness $offset")
-                currentImage.setImageBitmap(outBitmap)
-            }
-        }
-
     // do not change this function
     fun createBitmap(): Bitmap {
         val width = 200
@@ -205,9 +175,5 @@ class MainActivity : AppCompatActivity() {
         return bitmapOut
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        filterJob?.cancel()
-        filterJob = null
-    }
+
 }
