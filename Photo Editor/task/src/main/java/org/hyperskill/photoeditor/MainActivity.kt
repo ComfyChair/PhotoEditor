@@ -49,8 +49,9 @@ class MainActivity : AppCompatActivity() {
     private fun bindViews() {
         currentImage = findViewById(R.id.ivPhoto)
         galleryBtn = findViewById(R.id.btnGallery)
-        brightnessSlider = findViewById(R.id.slBrightness)
         saveBtn = findViewById(R.id.btnSave)
+        brightnessSlider = findViewById(R.id.slBrightness)
+
     }
 
     private fun setListeners() {

@@ -5,4 +5,6 @@
     <string name="save">save</string>
     <string name="brightness_slider_cont_descr">brightness slider</string>
     <string name="current_image_cont_descr">current image</string>
+    <string name="contrast_slider_cont_descr">contrast slider</string>
+    <string name="contrast">contrast</string>
 </resources>
