@@ -21,11 +21,9 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.slider.Slider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.coroutines.coroutineContext
 
 private const val PERMISSION_REQUEST_CODE = 0
 
@@ -107,7 +105,8 @@ class MainActivity : AppCompatActivity() {
     private suspend fun filterCurrentImage() = coroutineScope {
         val filtered = filters.applyTo(originalBitmap)
         if (isActive) {
-            runOnUiThread { currentImage.setImageBitmap(filtered) }
+            runOnUiThread {
+                currentImage.setImageBitmap(filtered) }
         }
     }
 
@@ -116,8 +115,9 @@ class MainActivity : AppCompatActivity() {
             if (result.resultCode == Activity.RESULT_OK) {
                 val photoUri = result.data?.data ?: return@registerForActivityResult
                 // update ivPhoto with loaded image and get Bitmap to apply filters
-                //currentImage.setImageURI(photoUri) // this would only display the image
+                // currentImage.setImageURI(photoUri) // this would only display the image
                 contentResolver.openInputStream(photoUri).use {
+                    originalBitmap.recycle()
                     originalBitmap = BitmapFactory.decodeStream(it)
                 }
                 currentImage.setImageBitmap(originalBitmap)

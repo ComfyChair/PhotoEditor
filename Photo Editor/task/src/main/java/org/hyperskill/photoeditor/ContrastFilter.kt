@@ -9,7 +9,7 @@ object ContrastFilter {
     internal suspend fun Bitmap.applyContrast(offset: Int) : Bitmap {
         val outBitmap = this.copy(Bitmap.Config.RGB_565, true)
         coroutineScope {
-            val avgBright = getAvgBrightness(this@applyContrast)
+            val avgBright = this@applyContrast.getAvgBrightness()
             val alpha : Double = (255.0 + offset) / (255.0 - offset)
             for (y in 0 until height) {
                 if (isActive) {
@@ -31,14 +31,22 @@ object ContrastFilter {
         return outBitmap
     }
 
-    private fun getAvgBrightness(bitmap: Bitmap): Int {
-        val width = bitmap.width
-        val height = bitmap.height
-        val pixels = IntArray(bitmap.width * bitmap.height)
-        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
-        val avgBright = pixels
-            .map {(Color.red(it) + Color.green(it) + Color.blue(it)) / 3 }
-            .reduce {acc, i -> acc + i } / pixels.size
-        return avgBright
+    private suspend fun Bitmap.getAvgBrightness(): Int {
+        var totalBrightness = 0L
+        val pixelCount = width * height
+        coroutineScope {
+            for (y in 0 until height) {
+                if (isActive) {
+                    for (x in 0 until width) {
+                        if (isActive) {
+                            val pixel = this@getAvgBrightness.getPixel(x, y)
+                            totalBrightness += (Color.red(pixel) + Color.green(pixel) + Color.blue(pixel)) / 3
+                        }
+                    }
+                }
+            }
+        }
+        val avgBrightness : Int = (totalBrightness / pixelCount).toInt()
+        return avgBrightness
     }
 }
