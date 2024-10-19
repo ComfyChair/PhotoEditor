@@ -2,29 +2,32 @@ package org.hyperskill.photoeditor
 
 import android.graphics.Bitmap
 import android.graphics.Color
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.isActive
 
 object ContrastFilter {
-    internal fun Bitmap.applyContrast(offset: Int) : Bitmap {
-        val avgBright = getAvgBrightness(this)
-        val alpha : Double = (255.0 + offset) / (255.0 - offset)
-        val pixels = IntArray(width * height)
-        var index: Int
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                // get current index in 2D-matrix
-                index = y * width + x
-                val thisPixel = this.getPixel(x, y)
-                val r = (alpha * (Color.red(thisPixel) - avgBright) + avgBright)
-                    .toInt().coerceIn(0, 255)
-                val g = (alpha * (Color.green(thisPixel) - avgBright) + avgBright)
-                    .toInt().coerceIn(0, 255)
-                val b = (alpha * (Color.blue(thisPixel) - avgBright) + avgBright)
-                    .toInt().coerceIn(0, 255)
-                pixels[index] = Color.rgb(r, g, b)
+    internal suspend fun Bitmap.applyContrast(offset: Int) : Bitmap {
+        val outBitmap = this.copy(Bitmap.Config.RGB_565, true)
+        coroutineScope {
+            val avgBright = getAvgBrightness(this@applyContrast)
+            val alpha : Double = (255.0 + offset) / (255.0 - offset)
+            for (y in 0 until height) {
+                if (isActive) {
+                    for (x in 0 until width) {
+                        if (isActive) {
+                            val thisPixel = this@applyContrast.getPixel(x, y)
+                            val r = (alpha * (Color.red(thisPixel) - avgBright) + avgBright)
+                                .toInt().coerceIn(0, 255)
+                            val g = (alpha * (Color.green(thisPixel) - avgBright) + avgBright)
+                                .toInt().coerceIn(0, 255)
+                            val b = (alpha * (Color.blue(thisPixel) - avgBright) + avgBright)
+                                .toInt().coerceIn(0, 255)
+                            outBitmap.setPixel(x, y, Color.rgb(r, g, b))
+                        }
+                    }
+                }
             }
         }
-        val outBitmap = Bitmap.createBitmap(width, height, config)
-        outBitmap.setPixels(pixels, 0, width, 0, 0, width, height )
         return outBitmap
     }
 
