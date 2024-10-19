@@ -17,7 +17,15 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.slider.Slider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlin.coroutines.coroutineContext
 
 private const val PERMISSION_REQUEST_CODE = 0
 
@@ -28,22 +36,23 @@ class MainActivity : AppCompatActivity() {
     // button bar buttons
     private lateinit var galleryBtn: Button
     private lateinit var saveBtn: Button
-    // filter values and filter sliders
+    // filter values, filter sliders, filter job
     private var filters = FilterSet.Default
     private lateinit var brightnessSlider: Slider
     private lateinit var contrastSlider: Slider
     private lateinit var saturationSlider: Slider
     private lateinit var gammaSlider: Slider
+    private var filterJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         bindViews()
-        setListeners()
-
         originalBitmap = createBitmap()
         //do not change this line
         currentImage.setImageBitmap(createBitmap())
+
+        setListeners()
     }
 
     private fun bindViews() {
@@ -59,37 +68,47 @@ class MainActivity : AppCompatActivity() {
     private fun setListeners() {
         galleryBtn.setOnClickListener {
             activityResultLauncher.launch(
-                Intent(
-                    Intent.ACTION_PICK,
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-                )
+                Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
             )
         }
         saveBtn.setOnClickListener {
             checkPermission()
         }
-        brightnessSlider.addOnChangeListener { _, value, fromUser ->
+        brightnessSlider.addOnChangeListener { _, value, _ ->
             filters = filters.copy(brightnessOffset = value.toInt())
-            filterCurrentImage()
+            filterJob?.cancel()
+            filterJob = lifecycleScope.launch(Dispatchers.Default) {
+                filterCurrentImage()
+            }
         }
-        contrastSlider.addOnChangeListener { _, value, fromUser ->
+        contrastSlider.addOnChangeListener { _, value, _ ->
             filters = filters.copy(contrastOffset = value.toInt())
-            filterCurrentImage()
+            filterJob?.cancel()
+            filterJob = lifecycleScope.launch(Dispatchers.Default) {
+                filterCurrentImage()
+            }
         }
-        saturationSlider.addOnChangeListener{ _, value, fromUser ->
+        saturationSlider.addOnChangeListener{ _, value, _ ->
             filters = filters.copy(saturationOffset = value.toInt())
-            filterCurrentImage()
+            filterJob?.cancel()
+            filterJob = lifecycleScope.launch(Dispatchers.Default) {
+                filterCurrentImage()
+            }
         }
-        gammaSlider.addOnChangeListener { _, value, fromUser ->
+        gammaSlider.addOnChangeListener { _, value, _ ->
             filters = filters.copy(gammaValue = value.toDouble())
-            filterCurrentImage()
+            filterJob?.cancel()
+            filterJob = lifecycleScope.launch(Dispatchers.Default) {
+                filterCurrentImage()
+            }
         }
     }
 
-    private fun filterCurrentImage() {
-        println("Filtering with $filters")
+    private suspend fun filterCurrentImage() = coroutineScope {
         val filtered = filters.applyTo(originalBitmap)
-        currentImage.setImageBitmap(filtered)
+        if (isActive) {
+            runOnUiThread { currentImage.setImageBitmap(filtered) }
+        }
     }
 
     private val activityResultLauncher =
@@ -156,9 +175,7 @@ class MainActivity : AppCompatActivity() {
         val uri = contentResolver.insert(
             MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
             contentValues) ?: return
-        println("output uri: $uri")
         contentResolver.openOutputStream(uri).use {
-            println("Saving picture")
             currentBitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
         }
     }
@@ -194,4 +211,8 @@ class MainActivity : AppCompatActivity() {
         return bitmapOut
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        filterJob?.cancel()
+    }
 }
